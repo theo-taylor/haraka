@@ -1,7 +1,7 @@
 import * as React from 'react';
 import Animated, {Easing} from "react-native-reanimated";
 
-import {parallel, sequence} from "./ReAnimate";
+import {parallel, sequence} from "./ReAnimated";
 
 const {
   Value,
