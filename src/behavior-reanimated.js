@@ -5,10 +5,11 @@ import {parallel, sequence} from "./ReAnimated";
 
 const {
   Value,
+  concat,
   timing,
 } = Animated;
 
-const defaultState = {scale: 1, rotate: 0, opacity: 1, translateX: 0, translateY: 0};
+const defaultState = {scale: 1, rotate: '0deg', opacity: 1, translateX: 0, translateY: 0};
 
 class Behaviour extends React.PureComponent {
   constructor(props) {
@@ -16,7 +17,7 @@ class Behaviour extends React.PureComponent {
     const {state, currentState, initialState} = props;
     const initialValues = state[initialState || currentState || 0];
     this.scale = new Value(initialValues.scale || defaultState.scale);
-    this.rotate = new Value(initialValues.rotate || defaultState.rotate);
+    this.rotate = new Value((initialValues.rotate) || (defaultState.rotate));
     this.transX = new Value(initialValues.translateX || defaultState.translateX);
     this.transY = new Value(initialValues.translateY || defaultState.translateY);
     this.opacity = new Value(initialValues.opacity || defaultState.opacity);
@@ -50,24 +51,26 @@ class Behaviour extends React.PureComponent {
       const stateToPush = includedStates[i] === 0 ?
         {...defaultState, ...state[0]} : state[includedStates[i]];
       const prevState = i > 0 ? state[includedStates[i - 1]] : {};
-  
+      
       const config = (prop) => {
+        let toValue = stateToPush[prop] || stateToPush[prop] === 0
+          ? stateToPush[prop]
+          : prevState && prevState.hasOwnProperty(prop)
+            ? prevState[prop]
+            : defaultState[prop];
         return  {
           duration,
-          toValue: stateToPush[prop] || stateToPush[prop] === 0
-            ? stateToPush[prop]
-            : prevState && prevState.hasOwnProperty(prop)
-              ? prevState[prop]
-              : defaultState[prop],
+          toValue,
           easing: Easing.inOut(Easing.ease),
         };
       };
       
       const scaleAnim = timing(this.scale, config('scale'));
+      const rotateAnim = timing(this.rotate, config('rotate'));
       const transXAnim = timing(this.transX, config('translateX'));
       const transYAnim = timing(this.transY, config('translateY'));
       const opacityAnim = timing(this.opacity, config('opacity'));
-      const pAnimations = parallel([scaleAnim, opacityAnim, transXAnim, transYAnim]);
+      const pAnimations = parallel([scaleAnim, rotateAnim, opacityAnim, transXAnim, transYAnim]);
       animations.push(pAnimations);
     }
     
@@ -88,6 +91,7 @@ class Behaviour extends React.PureComponent {
         style={[style, {
           opacity: this.opacity,
           transform: [
+            {rotate: concat(this.rotate, 'deg')},
             {scale: this.scale},
             {translateX: this.transX},
             {translateY: this.transY}
