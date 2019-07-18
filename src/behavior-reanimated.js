@@ -80,7 +80,7 @@ class Behaviour extends React.PureComponent {
     });
   };
   
-  componentWillUpdate(nextProps, nextState, nextContext) {
+  componentWillReceiveProps(nextProps, nextContext) {
     const {currentState} = this.props;
     const {currentState: nextCurrentState,} = nextProps;
     if (currentState !== nextCurrentState) this.run(nextProps); // Only run if current state has been updated
