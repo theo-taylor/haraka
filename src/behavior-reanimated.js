@@ -21,10 +21,20 @@ class Behaviour extends React.PureComponent {
     this.transX = new Value(initialValues.translateX || defaultState.translateX);
     this.transY = new Value(initialValues.translateY || defaultState.translateY);
     this.opacity = new Value(initialValues.opacity || defaultState.opacity);
+    
+    this.animatedStates = [];
+    
+    state.forEach((item, index)=> {
+      if (index === 0){
+        this.animatedStates.push({...defaultState, ...state[0]});
+      } else {
+        this.animatedStates.push({...this.animatedStates[index - 1], ...state[index]});
+      }
+    });
   }
   
   run = (nextProps) => {
-    const {currentState, state, config} = this.props;
+    const {currentState, config} = this.props;
     const {currentState: nextCurrentState,} = nextProps;
     let duration = config.duration || 1000;
     
@@ -40,7 +50,6 @@ class Behaviour extends React.PureComponent {
         includedStates.push(i + 1);
       }
     } else if (nextCurrentState < currentState) { // decreasing
-      
       for (let i = currentState; i > nextCurrentState; i--) {
         includedStates.push(i - 1);
       }
@@ -48,19 +57,12 @@ class Behaviour extends React.PureComponent {
     
     /* create a parallel animation for each state then push to the animations array to be animated in sequence */
     for (let i = 0; i < includedStates.length; i++) {// runs for each parallel animation
-      const stateToPush = includedStates[i] === 0 ?
-        {...defaultState, ...state[0]} : state[includedStates[i]];
-      const prevState = i > 0 ? state[includedStates[i - 1]] : {};
+      const stateToPush = this.animatedStates[includedStates[i]];
       
       const config = (prop) => {
-        let toValue = stateToPush[prop] || stateToPush[prop] === 0
-          ? stateToPush[prop]
-          : prevState && prevState.hasOwnProperty(prop)
-            ? prevState[prop]
-            : defaultState[prop];
-        return  {
+        return {
           duration,
-          toValue,
+          toValue: stateToPush[prop],
           easing: Easing.inOut(Easing.ease),
         };
       };
