@@ -18,15 +18,13 @@ const PROPS = [
   { prop: 'translateY', default: 0, transform: true },
 ];
 
-const defaultConfig = { type: 'spring', onComplete: ()=> console.log('Animation completed') };
-
 class Behaviour extends React.PureComponent {
   ref = React.createRef();
   
   static defaultProps = {
     clamp: false,
     clearStyleProps: false,
-    config: defaultConfig,
+    config: { type: 'spring', onComplete: ()=> console.log('Animation completed') },
     currentState: 0,
     disabled: false,
     initialState: 0,
@@ -40,13 +38,19 @@ class Behaviour extends React.PureComponent {
   
   constructor(props) {
     super(props);
-    const {initialState} = props;
+    const { initialState, unmounted } = this.props;
     
     this.nativeDriver = new Value(initialState);
+    
+    this.key = initialState;
     
     this.nativeStyles = {};
     
     this.setNativeStyles();
+    
+    this.state = {
+      mounted: !unmounted,
+    };
     
   }
   
@@ -118,32 +122,143 @@ class Behaviour extends React.PureComponent {
     });
   };
   
-  goTo = (nextCurrentState)=> {
-    const {
-      config,
-    } = this.props;
+  componentDidMount() {
+    const { disabled } = this.props;
     
-    this.nativeDriverConfig = {
-      duration: config.duration,
-      toValue: nextCurrentState,
-      easing: Easing.inOut(Easing.ease),
-    };
-    this.nativeDriverAnim = timing(this.nativeDriver, this.nativeDriverConfig);
-    sequence([this.nativeDriverAnim]).start(() => {
-      defaultConfig.onComplete();
-    });
-  };
-  
-  componentWillReceiveProps(nextProps, nextContext) {
-    const {currentState} = this.props;
-    const {currentState: nextCurrentState,} = nextProps;
-    if (currentState !== nextCurrentState) this.goTo(nextCurrentState); // Only run if current state has been updated
+    if (disabled) {
+      this.disable()
+    }
   }
   
+  componentWillReceiveProps(nextProps, nextContext) {
+    const { currentState, disabled } = this.props;
+    const { currentState: nextCurrentState, disabled: nextDisabled } = nextProps;
+    
+    if (currentState !== nextCurrentState) {
+      this.goTo(nextCurrentState)
+    }
+    
+    if (!disabled && nextDisabled) {
+      this.disable()
+    } else if (disabled && !nextDisabled) {
+      this.enable()
+    }
+  }
+  
+  mount = (state) => {
+    const { initialState } = this.props;
+    
+    this.nativeDriver.setValue(state || initialState);
+    
+    this.setState({ mounted: true })
+  };
+  
+  unmount = () => {
+    this.setState({ mounted: false })
+  };
+  
+  setNativeProps = (props) => {
+    this.ref.current.setNativeProps(props)
+  };
+  
+  disable = () => {
+    this.setNativeProps({ pointerEvents: 'none' })
+  };
+  
+  enable = () => {
+    this.setNativeProps({ pointerEvents: 'auto' })
+  };
+  
+  goTo = (key, config = {})=> {
+    const isSequence = Array.isArray(key);
+    
+    const { config: defaultConfig, state } = this.props;
+    
+    const { config: stateConfig = {} } = isSequence ? {} : state[key];
+    
+    const { delay, duration, onComplete, ref, type, unmount, ...opts } = {
+      ...defaultConfig,
+      ...stateConfig,
+      ...config,
+    };
+    
+    const curve = timing;// type === 'timing' ? timing : spring;
+    
+    const animate = {
+      duration,
+      toValue: key,
+      easing: Easing.inOut(Easing.ease),
+    };
+    
+    if (isSequence) {
+      const animations = [];
+      
+      console.log(key);
+      
+      key.forEach((toValue) => {
+        const animate = {
+          duration,
+          toValue,
+          easing: Easing.inOut(Easing.ease),
+        };
+        animations.push(
+          curve(
+            this.nativeDriver,
+            animate,
+          )
+        )
+      });
+      
+      this.key = animations[animations.length - 1];
+      
+      //let animationRef = Animated.sequence(animations);
+      
+      if (delay) {
+        //animationRef = Animated.sequence([Animated.delay(delay), animationRef])
+      }
+      
+      if (ref) {
+        //return animationRef
+      }
+      
+      sequence(animations).start(() => {
+        if ( unmount) this.unmount();
+        if (onComplete) onComplete()
+      });
+    }
+    
+    this.key = key;
+    
+    //let animationRef = animate(key);
+    
+    if (delay) {
+      //animationRef = Animated.sequence([Animated.delay(delay), animationRef])
+    }
+    
+    if (ref) {
+      //return animationRef
+    }
+    
+    const animations = curve(this.nativeDriver, animate);
+    animations.start();
+  };
+  
   render() {
-    const {children, style} = this.props;
+    const { mounted } = this.state;
+    
+    if (!mounted) {
+      return null
+    }
+    
+    const {
+      children,
+      pointerEvents,
+      style,
+    } = this.props;
+    
     return (
       <Animated.View
+        pointerEvents={pointerEvents}
         ref={this.ref}
         style={[style, this.nativeStyles]}>
         {children}
