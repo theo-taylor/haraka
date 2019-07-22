@@ -7,6 +7,7 @@ const {
   Extrapolate,
   Value,
   concat,
+  spring,
   timing,
 } = Animated;
 
@@ -182,24 +183,37 @@ class Behaviour extends React.PureComponent {
       ...config,
     };
     
-    const curve = timing;// type === 'timing' ? timing : spring;
-    
-    const animate = {
+    const curve = type === 'timing' ? timing : spring;
+  
+    const animate = type === 'timing' ? {
       duration,
       toValue: key,
       easing: Easing.inOut(Easing.ease),
+    } :  {
+      stiffness: new Value(100),
+      mass: new Value(1),
+      damping: new Value(10),
+      overshootClamping: false,
+      restSpeedThreshold: 0.001,
+      restDisplacementThreshold: 0.001,
+      toValue: key,
     };
     
     if (isSequence) {
       const animations = [];
-      
-      console.log(key);
-      
       key.forEach((toValue) => {
-        const animate = {
+        const animate = type === 'timing' ? {
           duration,
           toValue,
           easing: Easing.inOut(Easing.ease),
+        } :  {
+          stiffness: new Value(100),
+          mass: new Value(1),
+          damping: new Value(10),
+          overshootClamping: false,
+          restSpeedThreshold: 0.001,
+          restDisplacementThreshold: 0.001,
+          toValue: key,
         };
         animations.push(
           curve(
