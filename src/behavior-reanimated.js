@@ -211,14 +211,14 @@ class Behaviour extends React.PureComponent {
       
       this.key = animations[animations.length - 1];
       
-      //let animationRef = Animated.sequence(animations);
+      let animationRef = sequence(animations);
       
       if (delay) {
         //animationRef = Animated.sequence([Animated.delay(delay), animationRef])
       }
       
       if (ref) {
-        //return animationRef
+        return animationRef
       }
       
       sequence(animations).start(() => {
@@ -228,15 +228,15 @@ class Behaviour extends React.PureComponent {
     }
     
     this.key = key;
-    
-    //let animationRef = animate(key);
+  
+    let animationRef = curve(this.nativeDriver, animate);
     
     if (delay) {
       //animationRef = Animated.sequence([Animated.delay(delay), animationRef])
     }
     
     if (ref) {
-      //return animationRef
+      return animationRef
     }
     
     const animations = curve(this.nativeDriver, animate);
