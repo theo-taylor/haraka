@@ -11,6 +11,18 @@ const {
   timing,
 } = Animated;
 
+const PRESETS = {
+  faded: [{ opacity: 0 }, { opacity: 1 }],
+};
+
+const LAYOUT_PRESETS = {
+  absolute: { bottom: 0, left: 0, position: 'absolute', right: 0, top: 0 },
+  centered: { alignSelf: 'center' },
+  fixed: { position: 'absolute' },
+  full: { flex: 1 },
+  landing: { alignItems: 'center', flex: 1, justifyContent: 'center' },
+};
+
 const PROPS = [
   { prop: 'opacity', default: 1 },
   { prop: 'rotate', default: '0deg', transform: true },
@@ -271,16 +283,40 @@ class Behaviour extends React.PureComponent {
     }
     
     const {
+      absolute,
+      centered,
       children,
+      faded,
+      fixed,
+      full,
+      landing,
       pointerEvents,
+      skipProps,
       style,
+      ...rest
     } = this.props;
+  
+    const viewStyles = {
+      ...LAYOUT_PRESETS[absolute && 'absolute'],
+      ...LAYOUT_PRESETS[centered && 'centered'],
+      ...LAYOUT_PRESETS[fixed && 'fixed'],
+      ...LAYOUT_PRESETS[full && 'full'],
+      ...LAYOUT_PRESETS[landing && 'landing'],
+    };
+  
+    const propStyles = Object.keys(rest).reduce((obj, key) => {
+      if (skipProps.includes(key)) {
+        return obj
+      }
+    
+      return { ...obj, [key]: rest[key] }
+    }, {});
     
     return (
       <Animated.View
         pointerEvents={pointerEvents}
         ref={this.ref}
-        style={[style, {delay: this.delay}, this.nativeStyles]}>
+        style={[style, {delay: this.delay}, viewStyles, propStyles, this.nativeStyles]}>
         {children}
       </Animated.View>
     );
