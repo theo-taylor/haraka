@@ -48,6 +48,8 @@ class Behaviour extends React.PureComponent {
     this.nativeStyles = {};
     
     this.setNativeStyles();
+  
+    this.delay = new Value(0);
     
     this.state = {
       mounted: !unmounted,
@@ -226,9 +228,10 @@ class Behaviour extends React.PureComponent {
       this.key = animations[animations.length - 1];
       
       let animationRef = sequence(animations);
-      
+  
       if (delay) {
-        //animationRef = Animated.sequence([Animated.delay(delay), animationRef])
+        this.delayAnim = timing(this.delay, {toValue: 1, duration: delay, easing: Easing.inOut(Easing.ease)});
+        animationRef = sequence([this.delayAnim, animationRef])
       }
       
       if (ref) {
@@ -244,17 +247,20 @@ class Behaviour extends React.PureComponent {
     this.key = key;
   
     let animationRef = curve(this.nativeDriver, animate);
-    
+  
     if (delay) {
-      //animationRef = Animated.sequence([Animated.delay(delay), animationRef])
+      this.delayAnim = timing(this.delay, {toValue: 1, duration: delay, easing: Easing.inOut(Easing.ease)});
+      animationRef = sequence([this.delayAnim, animationRef])
     }
     
     if (ref) {
       return animationRef
     }
-    
-    const animations = curve(this.nativeDriver, animate);
-    animations.start();
+  
+    animationRef.start(() => {
+      if ( unmount) this.unmount();
+      if (onComplete) onComplete();
+    });
   };
   
   render() {
@@ -274,7 +280,7 @@ class Behaviour extends React.PureComponent {
       <Animated.View
         pointerEvents={pointerEvents}
         ref={this.ref}
-        style={[style, this.nativeStyles]}>
+        style={[style, {delay: this.delay}, this.nativeStyles]}>
         {children}
       </Animated.View>
     );
