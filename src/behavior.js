@@ -1,7 +1,7 @@
 import * as React from 'react';
 import Animated, {Easing} from "react-native-reanimated";
 
-import {sequence} from "./ReAnimated";
+import {sequence} from "./utils";
 
 const {
   Extrapolate,
